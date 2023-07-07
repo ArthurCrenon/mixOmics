@@ -27,6 +27,19 @@ ui <- fluidPage(
       # FILE SELECTOR
       checkboxGroupInput("fileselector", "Files to treat", inline = TRUE),
       
+      # SHOW PARAMETERS
+      conditionalPanel(
+        condition = "input.myTabset == 'PLSDA' | input.myTabset == 'Plot Indiv' | input.myTabset == 'Plot Arrow'",
+        HTML("<hr>"),
+        h3("Show :"),
+        checkboxInput("ind_names", "Ind Names", TRUE),
+        checkboxInput("ellipse", "Ellipse", TRUE),
+        checkboxInput("abline", "Abline", TRUE),
+        checkboxInput("star", "Star", TRUE),
+        checkboxInput("legend", "Legend", TRUE),
+      ),
+      
+      
       # KEEPX / Y VALUES
       # conditionalPanel(
       #   condition = "(input.myTabset == 'Graphique')",
@@ -216,12 +229,19 @@ server <- function(input, output, session) {
   
   # PLOT 1 : PLSDA
   output$plot1 <- renderPlot({
-    plotIndiv(result.diablo.tcga(), ellipse = TRUE)
+    plotIndiv(result.diablo.tcga(), 
+              ellipse = input$ellipse,
+              ind.names = input$ind_names,
+              abline = input$abline,
+              star = input$star,
+              legend = input$legend)
   })
   
   # PLOT THE PLSDA VARIABLES
   output$plotV <- renderPlot({
-    plotVar(result.diablo.tcga())
+    plotVar(result.diablo.tcga(),
+            abline = input$abline,
+            legend = input$legend)
   })
   
   #PLOT 2 : PERF DIABLO
@@ -245,18 +265,24 @@ server <- function(input, output, session) {
   output$plot5 <- renderPlot({
     plotIndiv(diablo.lcms(), 
               ncomp = 2,
-              ind.names = FALSE, 
+              ind.names = input$ind_names, 
+              star = input$star,
+              abline = input$abline,
               blocks = 'weighted.average',
-              ellipse = TRUE,
-              legend = TRUE, title = 'Diablo.lcms comp 1-2')
+              ellipse = input$ellipse,
+              legend = input$legend, 
+              title = 'Diablo.lcms comp 1-2')
   })
   
   #PLOT 6 : PLOT ARROW
   output$plot6 <- renderPlot({
     plotArrow(diablo.lcms(),
               ncomp = 2,
-              ind.names = FALSE, 
-              legend = TRUE, 
+              ind.names = input$ind_names, 
+              ellipse = input$ellipse, 
+              legend = input$legend, 
+              star = input$star,
+              abline = input$abline,
               save = 'pdf',
               name.save = 'arrowplot',
               title = 'Diablo.lcms comp1-2')
