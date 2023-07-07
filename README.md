@@ -1,2 +1,2 @@
 # mixOmics
-Shiny Interface of mixOmics R scripts
+Shiny Interface for mixOmics R scripts
