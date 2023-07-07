@@ -9,7 +9,6 @@ library(readxl)
 library(data.table)
 library(igraph)
 
-set.seed(123) # for reproducibility, remove for normal use
 
 # Definition de l'interface utilisateur
 ui <- fluidPage(
@@ -49,16 +48,15 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(
         id = "myTabset",
-        tabPanel("TEST", tableOutput("contents"), tableOutput("contents2"), textOutput("test1"), textOutput("test2")),
+        tabPanel("HOME", tableOutput("contents"), tableOutput("contents2"), textOutput("test1"), textOutput("test2")),
         tabPanel("PLSDA", plotOutput("plot1"), plotOutput("plotV")),
         tabPanel("Perf DIABLO", plotOutput("plot2")),
-        tabPanel("Result DIABLO", plotOutput("plot3")),
-        tabPanel("Result DIABLO", plotOutput("plot4")),
-        tabPanel("Result DIABLO", plotOutput("plot5")),
-        tabPanel("Result DIABLO", plotOutput("plot6")),
-        tabPanel("Result DIABLO", plotOutput("plot7")),
-        tabPanel("Result DIABLO", plotOutput("plot8")),
-        #tabPanel("Diablo", tableOutput("plot2"))
+        tabPanel("SelectVar", tableOutput("plot3")),
+        tabPanel("DIABLO", plotOutput("plot4")),
+        tabPanel("Plot Indiv", plotOutput("plot5")),
+        tabPanel("Plot Arrow", plotOutput("plot6")),
+        tabPanel("Circos Plot", plotOutput("plot7")),
+        tabPanel("CIM", plotOutput("plot8")),
       )
     )
   )
@@ -115,8 +113,6 @@ server <- function(input, output, session) {
     list
   })
   
-  
-  
   # DISPLAY FILE SELECTOR OPTIONS
   observe({
     updateCheckboxGroupInput(session, "fileselector", choices = choiceList(), inline = TRUE)
@@ -163,13 +159,6 @@ server <- function(input, output, session) {
     block.splsda(X = selectedFiles(), Y = Y(), ncomp = 2, 
                  keepX = list.keepX(), design = design())
   })
-  
-  # TEST DATA FROM BREAST.TCGA
-  # data(breast.TCGA)
-  # data = list(miRNA = breast.TCGA$data.train$mirna,
-  #             mRNA = breast.TCGA$data.train$mrna,
-  #             proteomics = breast.TCGA$data.train$protein)
-  # Y = breast.TCGA$data.train$subtype # set the response variable as the Y df
   
   # For square matrix filled with 0.1s
   design <- reactive({
@@ -241,7 +230,7 @@ server <- function(input, output, session) {
   })
   
   #PLOT 3 : SELECT VAR
-  output$plot3 <- renderPlot({
+  output$plot3 <- renderTable({
     selectVar(diablo.lcms(), 
               block = 'C18', 
               comp = 1)
