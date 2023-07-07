@@ -14,7 +14,7 @@ library(igraph)
 ui <- fluidPage(
   
   #shinythemes::themeSelector(),
-  #theme = shinytheme("lumen"),
+  theme = shinytheme("lumen"),
   titlePanel("Multi-Omics"),
   
   sidebarLayout(
