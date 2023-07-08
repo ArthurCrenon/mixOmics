@@ -27,6 +27,13 @@ ui <- fluidPage(
       # FILE SELECTOR
       checkboxGroupInput("fileselector", "Files to treat", inline = TRUE),
       
+      # NUMB OF COMPONENT PARAMETER
+       conditionalPanel(
+         condition = "input.myTabset == 'Perf DIABLO' |input.myTabset == 'SelectVar' | input.myTabset == 'DIABLO' | input.myTabset == 'Plot Indiv' | input.myTabset == 'Plot Arrow' | input.myTabset == 'Circos Plot' | input.myTabset == 'CIM'",
+         HTML("<hr>"),
+         numericInput("ncomp", "Number of components", "5", "1", NA, "1"),
+       ),
+      
       # SHOW PARAMETERS
       conditionalPanel(
         condition = "input.myTabset == 'PLSDA' | input.myTabset == 'Plot Indiv' | input.myTabset == 'Plot Arrow'",
@@ -61,10 +68,10 @@ ui <- fluidPage(
     mainPanel(
       tabsetPanel(
         id = "myTabset",
-        tabPanel("HOME", tableOutput("contents"), tableOutput("contents2"), textOutput("test1"), textOutput("test2")),
+        tabPanel("HOME", textOutput("test")),
         tabPanel("PLSDA", plotOutput("plot1"), plotOutput("plotV")),
-        tabPanel("Perf DIABLO", plotOutput("plot2")),
-        tabPanel("SelectVar", tableOutput("plot3")),
+        tabPanel("Perf DIABLO", textOutput("ncomp1"), plotOutput("plot2")),
+        tabPanel("SelectVar", textOutput("ncomp2"),tableOutput("plot3")),
         tabPanel("DIABLO", plotOutput("plot4")),
         tabPanel("Plot Indiv", plotOutput("plot5")),
         tabPanel("Plot Arrow", plotOutput("plot6")),
@@ -140,20 +147,22 @@ server <- function(input, output, session) {
   
   # form basic DIABLO model
   basic.diablo.model <- reactive({
-    block.splsda(X = selectedFiles(), Y = Y(), design = design()) 
+    block.splsda(X = selectedFiles(), Y = Y(), design = design(), ncomp = input$ncomp) 
   })
   
   #Select number of Component
   perf.diablo <- reactive({
-    perf(basic.diablo.model(), validation = 'loo', folds = 3, nrepeat = 1)
+    perf(basic.diablo.model(), validation = 'Mfold', folds = 10, nrepeat = 10)
   }) 
+  
+  ncomp <- 5
   
   ncomp <- reactive({
     perf.diablo()$choice.ncomp$WeightedVote["Overall.BER", "centroids.dist"]
   })
   
   tune.TCGA <- reactive({
-    tune.block.splsda(X = selectedFiles(), Y = Y(), ncomp = 1, 
+    tune.block.splsda(X = selectedFiles(), Y = Y(), ncomp = ncomp(), 
                       test.keepX = test.keepX, design = design(),
                       validation = 'loo', folds = 3, nrepeat = 1,
                       dist = "centroids.dist")
@@ -169,7 +178,7 @@ server <- function(input, output, session) {
                      Lipid = c(5:9, seq(10, 18, 2), seq(20,30,5)))
   
   final.diablo.model <- reactive({
-    block.splsda(X = selectedFiles(), Y = Y(), ncomp = 2, 
+    block.splsda(X = selectedFiles(), Y = Y(), ncomp = ncomp(), 
                  keepX = list.keepX(), design = design())
   })
   
@@ -189,19 +198,14 @@ server <- function(input, output, session) {
   list.keepY <- reactive({
     c(input$keepy1, input$keepy2)
   })
-  
-  # set grid of values for each component to test
-  test.keepX = list (mRNA = c(5:9, seq(10, 18, 2), seq(20,30,5)), 
-                     miRNA = c(5:9, seq(10, 18, 2), seq(20,30,5)),
-                     proteomics = c(5:9, seq(10, 18, 2), seq(20,30,5)))
-  
+
   PPARAM <- reactive({
     BiocParallel::SnowParam(workers = parallel::detectCores()-1)
   })
   
   tune.diablo.splsda <- reactive({
     tune.block.splsda(selectedFiles(), Y(), 
-                      ncomp = 2, 
+                      ncomp = ncomp(), 
                       #test.keepX = list.keepX(),# erreur avec test.keepX
                       validation = 'loo', 
                       folds = 4,
@@ -219,7 +223,7 @@ server <- function(input, output, session) {
   
   diablo.lcms <- reactive({
     block.splsda(selectedFiles(), Y(),
-                 ncomp= 2,
+                 ncomp= ncomp(),
                  keepX = list.keepX.tune(),
                  design = design())
   })
@@ -258,13 +262,13 @@ server <- function(input, output, session) {
   
   #PLOT 4 : PLOT DIABLO
   output$plot4 <- renderPlot({
-    plotDiablo(diablo.lcms(), ncomp = 2)
+    plotDiablo(diablo.lcms(), ncomp = 1)
   })
   
   #PLOT 5 : PLOT INDIV
   output$plot5 <- renderPlot({
     plotIndiv(diablo.lcms(), 
-              ncomp = 2,
+              ncomp = input$ncomp,
               ind.names = input$ind_names, 
               star = input$star,
               abline = input$abline,
@@ -277,7 +281,7 @@ server <- function(input, output, session) {
   #PLOT 6 : PLOT ARROW
   output$plot6 <- renderPlot({
     plotArrow(diablo.lcms(),
-              ncomp = 2,
+              ncomp = ncomp(),
               ind.names = input$ind_names, 
               ellipse = input$ellipse, 
               legend = input$legend, 
@@ -315,6 +319,13 @@ server <- function(input, output, session) {
   })
   
   
+  # VALUES OUTPUT
+  output$ncomp1 <- renderText({
+    paste("Calculated number of component : ", ncomp())
+  })
+  output$ncomp2 <- renderText({
+    paste("Calculated number of component : ", ncomp())
+  })
   # INFOS OUTPUTS
   output$test1 <- renderText({
   })
